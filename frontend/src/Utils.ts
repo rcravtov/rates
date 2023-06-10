@@ -13,9 +13,14 @@ export type Rate = {
     Currency: Currency
 }
 
+export const apiURL  = ():string => {
+    return window.location.toString() + "api/"
+}
+
 export const getCurrencies = async ():Promise<Currency[]> => {
     
-    const res = await fetch(`http://localhost:8080/currencies`)
+    const url = `${apiURL()}currencies`
+    const res = await fetch(url)
     
     let data = await res.json() as Currency[]
 
@@ -35,7 +40,8 @@ export const formatDate = (date: Date):string => {
 export const getRates = async (date: Date):Promise<Rate[]> => {
     
     const dateString = formatDate(date)
-    const res = await fetch(`http://localhost:8080/rates?date=${dateString}`)
+    const url = `${apiURL()}rates?date=${dateString}`
+    const res = await fetch(url)
     
     let data = await res.json() as Rate[]
 

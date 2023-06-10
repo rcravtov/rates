@@ -35,9 +35,9 @@ func New() (*App, error) {
 	app.ginEngine.Use(middleware.CorsMiddleware())
 
 	app.ginEngine.Use(static.ServeRoot("/", "/frontend"))
-	app.ginEngine.GET("/status", app.endpoint.Status)
-	app.ginEngine.GET("/currencies", app.endpoint.GetCurrencies)
-	app.ginEngine.GET("/rates", app.endpoint.GetRates)
+	app.ginEngine.GET("/api/status", app.endpoint.Status)
+	app.ginEngine.GET("/api/currencies", app.endpoint.GetCurrencies)
+	app.ginEngine.GET("/api/rates", app.endpoint.GetRates)
 	//app.ginEngine.GET("/import", app.endpoint.ImportRates)
 
 	return &app, nil
