@@ -16,6 +16,8 @@ services:
     build: .
     container_name: "rates-api"
     environment:
+      JWT_SECRET: "CHANGE_ME"
+      JWT_MINUTE_LIFESPAN: "600"
       GIN_MODE: "release"
       DB_USERNAME: "postgres"
       DB_PASSWORD: "postgres"

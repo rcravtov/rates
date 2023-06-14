@@ -24,6 +24,22 @@ type XMLRates struct {
 	Rates   []XMLRate `xml:"Valute"`
 }
 
+func (s *Service) ImportRates(date time.Time) ([]Rate, error) {
+
+	rates, err := s.GetNBMRates(date)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.Store.ImportRates(rates)
+	if err != nil {
+		return nil, err
+	}
+
+	return rates, nil
+
+}
+
 func (s *Service) GetNBMRatesXML(date time.Time) (XMLRates, error) {
 
 	var xmlRates XMLRates
