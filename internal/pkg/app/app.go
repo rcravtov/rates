@@ -38,7 +38,13 @@ func New() (*App, error) {
 	app.ginEngine.GET("/api/status", app.endpoint.Status)
 	app.ginEngine.GET("/api/currencies", app.endpoint.GetCurrencies)
 	app.ginEngine.GET("/api/rates", app.endpoint.GetRates)
-	//app.ginEngine.GET("/import", app.endpoint.ImportRates)
+	app.ginEngine.POST("/api/auth", app.endpoint.Auth)
+
+	protected := app.ginEngine.Group("/api/admin")
+	protected.Use(middleware.JwtAuthMiddleware())
+	protected.GET("/settings", app.endpoint.GetSettings)
+	protected.POST("/settings", app.endpoint.SetSettings)
+	protected.GET("/import", app.endpoint.ImportRates)
 
 	return &app, nil
 
