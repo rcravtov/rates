@@ -32,7 +32,13 @@ func New() (*Store, error) {
 		return store, err
 	}
 
-	err = store.Client.AutoMigrate(&Currency{}, &Rate{}, &Settings{})
+	err = store.Client.AutoMigrate(
+		&Currency{},
+		&Rate{},
+		&AuthSettings{},
+		&Settings{},
+		&ImportLogData{},
+	)
 	if err != nil {
 		return store, err
 	}

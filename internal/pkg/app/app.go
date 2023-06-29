@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 )
 
 type App struct {
@@ -28,7 +29,7 @@ func New() (*App, error) {
 		return &app, err
 	}
 
-	app.service = service.New(app.store)
+	app.service = service.New(app.store, cron.New())
 	app.endpoint = endpoint.New(app.service)
 
 	app.ginEngine = gin.Default()
@@ -42,9 +43,12 @@ func New() (*App, error) {
 
 	protected := app.ginEngine.Group("/api/admin")
 	protected.Use(middleware.JwtAuthMiddleware())
+	protected.GET("/auth_settings", app.endpoint.GetAuthSettings)
+	protected.POST("/auth_settings", app.endpoint.SetAuthSettings)
 	protected.GET("/settings", app.endpoint.GetSettings)
 	protected.POST("/settings", app.endpoint.SetSettings)
 	protected.GET("/import", app.endpoint.ImportRates)
+	protected.GET("/import_logs", app.endpoint.GetImportLogs)
 
 	return &app, nil
 
