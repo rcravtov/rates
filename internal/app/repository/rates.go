@@ -22,10 +22,6 @@ type Rate struct {
 	Change       float32   `gorm:"-"`
 }
 
-type Imports struct {
-	gorm.Model
-}
-
 func (store *Store) ImportRates(rates []service.Rate) error {
 
 	for _, serviceRate := range rates {

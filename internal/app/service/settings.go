@@ -4,25 +4,64 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Settings struct {
+type AuthSettings struct {
 	Login        string `json:"login"`
 	PasswordHash string `json:"-"`
 }
 
-type RawSettings struct {
+type RawAuthSettings struct {
 	Login    string `json:"login" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+type Settings struct {
+	AutoImport    bool `json:"auto_import"`
+	ImportHours   int  `json:"import_hours"`
+	ImportMinutes int  `json:"import_minutes"`
+}
+
+type RawSettings struct {
+	AutoImport    bool `json:"auto_import" binding:"required"`
+	ImportHours   int  `json:"import_hours" binding:"required"`
+	ImportMinutes int  `json:"import_minutes"`
+}
+
+func (s *Service) CheckCreateDefaultAuthSettings() error {
+
+	authSettingsCount, err := s.Store.GetAuthSettingsCount()
+	if err != nil {
+		panic(fmt.Errorf("error getting auth settings count: %w", err))
+	}
+
+	if authSettingsCount == 0 {
+
+		log.Println("No auth settings found. Creating default auth settings")
+
+		rawAuthSettings := RawAuthSettings{
+			Login:    "admin",
+			Password: "admin",
+		}
+
+		_, err := s.SetAuthSettings(rawAuthSettings)
+		if err != nil {
+			panic(fmt.Errorf("error creating default auth settings: %w", err))
+		}
+
+	}
+
+	return nil
 }
 
 func (s *Service) CheckCreateDefaultSettings() error {
 
 	settingsCount, err := s.Store.GetSettingsCount()
 	if err != nil {
-		panic(fmt.Errorf("error getting user count: %w", err))
+		panic(fmt.Errorf("error getting settings count: %w", err))
 	}
 
 	if settingsCount == 0 {
@@ -30,17 +69,34 @@ func (s *Service) CheckCreateDefaultSettings() error {
 		log.Println("No settings found. Creating default settings")
 
 		rawSettings := RawSettings{
-			Login:    "admin",
-			Password: "admin",
+			AutoImport:    false,
+			ImportHours:   0,
+			ImportMinutes: 0,
 		}
 
 		_, err := s.SetSettings(rawSettings)
 		if err != nil {
 			panic(fmt.Errorf("error creating default settings: %w", err))
 		}
+
+	} else {
+
+		settings, err := s.GetSettings()
+		if err != nil {
+			return err
+		}
+
+		s.StartImportJobs(settings)
+
 	}
 
 	return nil
+}
+
+func (s *Service) GetAuthSettings() (AuthSettings, error) {
+
+	return s.Store.GetAuthSettings()
+
 }
 
 func (s *Service) GetSettings() (Settings, error) {
@@ -49,17 +105,52 @@ func (s *Service) GetSettings() (Settings, error) {
 
 }
 
+func (s *Service) SetAuthSettings(rawAuthSettings RawAuthSettings) (AuthSettings, error) {
+
+	authSettings := AuthSettings{}
+
+	if len(rawAuthSettings.Login) == 0 {
+		return authSettings, errors.New("invalid login")
+	}
+
+	if len(rawAuthSettings.Password) == 0 {
+		return authSettings, errors.New("invalid password")
+	}
+
+	authSettings.Login = rawAuthSettings.Login
+	authSettings.PasswordHash = GetPasswordHash(rawAuthSettings.Password)
+
+	err := s.Store.SetAuthSettings(authSettings)
+	if err != nil {
+		return authSettings, err
+	}
+
+	return authSettings, nil
+
+}
+
 func (s *Service) SetSettings(rawSettings RawSettings) (Settings, error) {
 
-	settings := Settings{
-		Login:        rawSettings.Login,
-		PasswordHash: GetPasswordHash(rawSettings.Password),
+	settings := Settings{}
+
+	if rawSettings.ImportHours < 0 || rawSettings.ImportHours > 59 {
+		return settings, errors.New("invalid import hours value")
 	}
+
+	if rawSettings.ImportMinutes < 0 || rawSettings.ImportMinutes > 59 {
+		return settings, errors.New("invalid import minutes value")
+	}
+
+	settings.AutoImport = rawSettings.AutoImport
+	settings.ImportHours = rawSettings.ImportHours
+	settings.ImportMinutes = rawSettings.ImportMinutes
 
 	err := s.Store.SetSettings(settings)
 	if err != nil {
 		return settings, err
 	}
+
+	s.StartImportJobs(settings)
 
 	return settings, nil
 
@@ -67,16 +158,16 @@ func (s *Service) SetSettings(rawSettings RawSettings) (Settings, error) {
 
 func (s *Service) AuthorizeUser(login string, password string) (string, error) {
 
-	settings, err := s.Store.GetSettings()
+	authSettings, err := s.Store.GetAuthSettings()
 	if err != nil {
 		return "", err
 	}
 
-	if settings.Login != login {
+	if authSettings.Login != login {
 		return "", errors.New("bad login or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(settings.PasswordHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(authSettings.PasswordHash), []byte(password))
 	if err != nil {
 		return "", err
 	}
@@ -94,5 +185,35 @@ func GetPasswordHash(password string) string {
 
 	bhash, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
 	return string(bhash)
+
+}
+
+func (s *Service) StartImportJobs(settings Settings) error {
+
+	s.Jobs.Stop()
+
+	for _, entry := range s.Jobs.Entries() {
+		s.Jobs.Remove(entry.ID)
+	}
+
+	if settings.AutoImport {
+
+		spec := fmt.Sprintf("%d %d * * *", settings.ImportMinutes, settings.ImportHours)
+		s.Jobs.AddFunc(spec, s.AutoImport)
+		s.Jobs.Start()
+
+		log.Printf("Auto import is set to %02d:%02d\n", settings.ImportHours, settings.ImportMinutes)
+
+	}
+
+	return nil
+
+}
+
+func (s *Service) AutoImport() {
+
+	date := time.Now().AddDate(0, 0, 1)
+	log.Println("Auto import started, data date:", date)
+	s.ImportRates(date, true)
 
 }

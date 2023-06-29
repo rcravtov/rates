@@ -2,6 +2,8 @@ package service
 
 import (
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 type IStore interface {
@@ -11,15 +13,26 @@ type IStore interface {
 	GetSettingsCount() (int64, error)
 	SetSettings(Settings) error
 	GetSettings() (Settings, error)
+	GetAuthSettingsCount() (int64, error)
+	SetAuthSettings(AuthSettings) error
+	GetAuthSettings() (AuthSettings, error)
+	LogImport(time.Time, bool, bool, string) error
+	GetImportLogs(int, int) (ImportLogPage, error)
 }
 
 type Service struct {
 	Store IStore
+	Jobs  *cron.Cron
 }
 
-func New(store IStore) *Service {
+func New(store IStore, cron *cron.Cron) *Service {
 
-	service := &Service{Store: store}
+	service := &Service{
+		Store: store,
+		Jobs:  cron,
+	}
+
+	service.CheckCreateDefaultAuthSettings()
 	service.CheckCreateDefaultSettings()
 
 	return service

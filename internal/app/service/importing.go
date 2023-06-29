@@ -24,18 +24,48 @@ type XMLRates struct {
 	Rates   []XMLRate `xml:"Valute"`
 }
 
-func (s *Service) ImportRates(date time.Time) ([]Rate, error) {
+type ImportLogData struct {
+	Date        time.Time `json:"date"`
+	DataDate    time.Time `json:"data_date"`
+	Auto        bool      `json:"auto"`
+	Success     bool      `json:"success"`
+	Description string    `json:"description"`
+}
+
+type ImportLogPage struct {
+	Total  int             `json:"total"`
+	Offset int             `json:"offset"`
+	Limit  int             `json:"limit"`
+	Data   []ImportLogData `json:"data"`
+}
+
+func (s *Service) LogImport(dataDate time.Time, auto bool, success bool, description string) error {
+
+	return s.Store.LogImport(dataDate, auto, success, description)
+
+}
+
+func (s *Service) GetImportLogs(offset int, limit int) (ImportLogPage, error) {
+
+	return s.Store.GetImportLogs(offset, limit)
+
+}
+
+func (s *Service) ImportRates(date time.Time, auto bool) ([]Rate, error) {
 
 	rates, err := s.GetNBMRates(date)
 	if err != nil {
+		s.LogImport(date, auto, false, err.Error())
 		return nil, err
 	}
 
 	err = s.Store.ImportRates(rates)
 	if err != nil {
+		s.LogImport(date, auto, false, err.Error())
 		return nil, err
 	}
 
+	s.LogImport(date, auto, true, "")
 	return rates, nil
 
 }

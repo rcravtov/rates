@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"rates/internal/app/service"
@@ -11,12 +12,15 @@ import (
 
 type IService interface {
 	GetNBMRates(time.Time) ([]service.Rate, error)
-	ImportRates(time.Time) ([]service.Rate, error)
+	ImportRates(time.Time, bool) ([]service.Rate, error)
 	GetCurrencies() ([]service.Currency, error)
 	GetRates(time.Time) ([]service.Rate, error)
 	GetSettings() (service.Settings, error)
 	SetSettings(service.RawSettings) (service.Settings, error)
+	GetAuthSettings() (service.AuthSettings, error)
+	SetAuthSettings(service.RawAuthSettings) (service.AuthSettings, error)
 	AuthorizeUser(string, string) (string, error)
+	GetImportLogs(int, int) (service.ImportLogPage, error)
 }
 
 type Endpoint struct {
@@ -44,7 +48,7 @@ func (e *Endpoint) ImportRates(c *gin.Context) {
 		return
 	}
 
-	rates, err := e.service.ImportRates(date)
+	rates, err := e.service.ImportRates(date, false)
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
@@ -115,6 +119,36 @@ func (e *Endpoint) SetSettings(c *gin.Context) {
 
 }
 
+func (e *Endpoint) GetAuthSettings(c *gin.Context) {
+
+	settings, err := e.service.GetAuthSettings()
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, settings)
+
+}
+
+func (e *Endpoint) SetAuthSettings(c *gin.Context) {
+
+	var input service.RawAuthSettings
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	settings, err := e.service.SetAuthSettings(input)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, settings)
+
+}
+
 func (e *Endpoint) Auth(c *gin.Context) {
 
 	type AuthInput struct {
@@ -143,5 +177,29 @@ func (e *Endpoint) Auth(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+
+}
+
+func (e *Endpoint) GetImportLogs(c *gin.Context) {
+
+	offsetStr := c.Query("offset")
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
+
+	limitStr := c.Query("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 0
+	}
+
+	logs, err := e.service.GetImportLogs(offset, limit)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, logs)
 
 }
