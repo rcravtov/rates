@@ -6,8 +6,8 @@ import (
 )
 
 type ImportLogData struct {
-	ID          int64 `gorm:"primaryKey"`
-	Date        time.Time
+	ID          int64     `gorm:"primaryKey"`
+	Date        time.Time `gorm:"type:timestamp"`
 	DataDate    time.Time `gorm:"type:date"`
 	Auto        bool
 	Success     bool

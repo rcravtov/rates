@@ -10,7 +10,11 @@ import (
 
 func CorsMiddleware() gin.HandlerFunc {
 
-	return cors.Default()
+	config := cors.DefaultConfig()
+	config.AddAllowHeaders("Authorization")
+	config.AllowAllOrigins = true
+	config.AllowCredentials = true
+	return cors.New(config)
 
 }
 
