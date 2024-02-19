@@ -50,7 +50,7 @@ export type ImportLogPage = {
 }
 
 export const apiURL  = ():string => {
-    return window.location.origin + "api/"
+    return window.location.origin + "/api/"
 }
 
 export const getCurrencies = async ():Promise<Currency[]> => {
@@ -125,7 +125,6 @@ export const authorize = async (login:String, password:String):Promise<AuthResul
     }
 
     authResult.Token = resJSON.token;
-    console.log(resJSON.token);
     
     return authResult;
 
