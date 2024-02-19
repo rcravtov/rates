@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -74,9 +73,6 @@ func (s *Service) CheckCreateDefaultSettings() error {
 			AutoImport:    false,
 			ImportHours:   0,
 			ImportMinutes: 0,
-			AutoImport:    false,
-			ImportHours:   0,
-			ImportMinutes: 0,
 		}
 
 		_, err := s.SetSettings(rawSettings)
@@ -93,16 +89,9 @@ func (s *Service) CheckCreateDefaultSettings() error {
 
 		s.StartImportJobs(settings)
 
-
 	}
 
 	return nil
-}
-
-func (s *Service) GetAuthSettings() (AuthSettings, error) {
-
-	return s.Store.GetAuthSettings()
-
 }
 
 func (s *Service) GetAuthSettings() (AuthSettings, error) {
@@ -171,8 +160,6 @@ func (s *Service) SetSettings(rawSettings RawSettings) (Settings, error) {
 
 	s.StartImportJobs(settings)
 
-	s.StartImportJobs(settings)
-
 	return settings, nil
 
 }
@@ -180,17 +167,14 @@ func (s *Service) SetSettings(rawSettings RawSettings) (Settings, error) {
 func (s *Service) AuthorizeUser(login string, password string) (string, error) {
 
 	authSettings, err := s.Store.GetAuthSettings()
-	authSettings, err := s.Store.GetAuthSettings()
 	if err != nil {
 		return "", err
 	}
 
 	if authSettings.Login != login {
-	if authSettings.Login != login {
 		return "", errors.New("bad login or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(authSettings.PasswordHash), []byte(password))
 	err = bcrypt.CompareHashAndPassword([]byte(authSettings.PasswordHash), []byte(password))
 	if err != nil {
 		return "", err
@@ -205,4 +189,39 @@ func (s *Service) AuthorizeUser(login string, password string) (string, error) {
 
 }
 
+func GetPasswordHash(password string) string {
 
+	bhash, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	return string(bhash)
+
+}
+
+func (s *Service) StartImportJobs(settings Settings) error {
+
+	s.Jobs.Stop()
+
+	for _, entry := range s.Jobs.Entries() {
+		s.Jobs.Remove(entry.ID)
+	}
+
+	if settings.AutoImport {
+
+		spec := fmt.Sprintf("%d %d * * *", settings.ImportMinutes, settings.ImportHours)
+		s.Jobs.AddFunc(spec, s.AutoImport)
+		s.Jobs.Start()
+
+		log.Printf("Auto import is set to %02d:%02d\n", settings.ImportHours, settings.ImportMinutes)
+
+	}
+
+	return nil
+
+}
+
+func (s *Service) AutoImport() {
+
+	date := time.Now().AddDate(0, 0, 1)
+	log.Println("Auto import started, data date:", date)
+	s.ImportRates(date, true)
+
+}

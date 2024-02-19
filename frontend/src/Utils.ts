@@ -50,7 +50,7 @@ export type ImportLogPage = {
 }
 
 export const apiURL  = ():string => {
-    return window.location.origin + "api/"
+    return window.location.origin + "/api/"
 }
 
 export const getCurrencies = async ():Promise<Currency[]> => {
