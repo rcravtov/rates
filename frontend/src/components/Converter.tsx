@@ -73,7 +73,7 @@ const Converter: Component<Props> = (props) => {
     }
 
     return (
-        <div class='row g-3 mb-3'>
+        <div class='me-1 row g-3 mb-3'>
             <div class="col-auto">
                 <label for="date" class="col-form-label">Date</label>
             </div>

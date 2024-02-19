@@ -17,6 +17,7 @@
   "dependencies": {
     "@solidjs/router": "^0.8.2",
     "bootstrap": "^5.2.3",
+    "inputmask": "^5.0.8",
     "solid-js": "^1.6.10"
   }
 }

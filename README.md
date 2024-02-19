@@ -13,7 +13,7 @@ Open localhost:8080 in your browser, load currency rates data.
 
 In the main directory run:
 
-### `docker compose up --build`
+### `make run`
 
 Will build the application backend and frontend. Will start 2 containers:
 - Postgres database

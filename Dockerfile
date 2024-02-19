@@ -1,5 +1,5 @@
 # backend builder
-FROM golang:1.20 AS backend-builder
+FROM golang:1.21 AS backend-builder
 RUN mkdir /app
 ADD . /app
 WORKDIR /app
