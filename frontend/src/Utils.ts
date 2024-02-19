@@ -125,7 +125,6 @@ export const authorize = async (login:String, password:String):Promise<AuthResul
     }
 
     authResult.Token = resJSON.token;
-    console.log(resJSON.token);
     
     return authResult;
 

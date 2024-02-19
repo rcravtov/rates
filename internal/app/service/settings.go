@@ -11,13 +11,11 @@ import (
 )
 
 type AuthSettings struct {
-type AuthSettings struct {
 	Login        string `json:"login"`
 	PasswordHash string `json:"-"`
 	Token        string `json:"token"`
 }
 
-type RawAuthSettings struct {
 type RawAuthSettings struct {
 	Login    string `json:"login" binding:"required"`
 	Password string `json:"password" binding:"required"`
@@ -66,7 +64,6 @@ func (s *Service) CheckCreateDefaultSettings() error {
 	settingsCount, err := s.Store.GetSettingsCount()
 	if err != nil {
 		panic(fmt.Errorf("error getting settings count: %w", err))
-		panic(fmt.Errorf("error getting settings count: %w", err))
 	}
 
 	if settingsCount == 0 {
@@ -96,15 +93,6 @@ func (s *Service) CheckCreateDefaultSettings() error {
 
 		s.StartImportJobs(settings)
 
-
-	} else {
-
-		settings, err := s.GetSettings()
-		if err != nil {
-			return err
-		}
-
-		s.StartImportJobs(settings)
 
 	}
 
@@ -217,69 +205,4 @@ func (s *Service) AuthorizeUser(login string, password string) (string, error) {
 
 }
 
-func GetPasswordHash(password string) string {
 
-	bhash, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
-	return string(bhash)
-
-}
-
-func (s *Service) StartImportJobs(settings Settings) error {
-
-	s.Jobs.Stop()
-
-	for _, entry := range s.Jobs.Entries() {
-		s.Jobs.Remove(entry.ID)
-	}
-
-	if settings.AutoImport {
-
-		spec := fmt.Sprintf("%d %d * * *", settings.ImportMinutes, settings.ImportHours)
-		s.Jobs.AddFunc(spec, s.AutoImport)
-		s.Jobs.Start()
-
-		log.Printf("Auto import is set to %02d:%02d\n", settings.ImportHours, settings.ImportMinutes)
-
-	}
-
-	return nil
-
-}
-
-func (s *Service) AutoImport() {
-
-	date := time.Now().AddDate(0, 0, 1)
-	log.Println("Auto import started, data date:", date)
-	s.ImportRates(date, true)
-
-}
-
-func (s *Service) StartImportJobs(settings Settings) error {
-
-	s.Jobs.Stop()
-
-	for _, entry := range s.Jobs.Entries() {
-		s.Jobs.Remove(entry.ID)
-	}
-
-	if settings.AutoImport {
-
-		spec := fmt.Sprintf("%d %d * * *", settings.ImportMinutes, settings.ImportHours)
-		s.Jobs.AddFunc(spec, s.AutoImport)
-		s.Jobs.Start()
-
-		log.Printf("Auto import is set to %02d:%02d\n", settings.ImportHours, settings.ImportMinutes)
-
-	}
-
-	return nil
-
-}
-
-func (s *Service) AutoImport() {
-
-	date := time.Now().AddDate(0, 0, 1)
-	log.Println("Auto import started, data date:", date)
-	s.ImportRates(date, true)
-
-}
