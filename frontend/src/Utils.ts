@@ -310,20 +310,18 @@ export const importNow = async (date: Date, token: string): Promise<GenericResul
         }
     })
 
-    //const resJSON = await res.json();
-
     const result: GenericResult = {
         isError: false,
         ErrorMessage: "",
     }
 
-    // if (res.status !== 200) {
+    if (res.status !== 200) {
 
-    //     result.isError = true;
-    //     result.ErrorMessage = "Error importing";
-    //     return result;
+        result.isError = true;
+        result.ErrorMessage = "Error importing";
+        return result;
 
-    // }
+    }
 
     return result;
 
